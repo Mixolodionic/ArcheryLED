@@ -121,14 +121,7 @@ bool pbuz;
 bool leftactive;
 bool rightactive;
 
-#define POT_PIN 34
-#define POT_MAX 4095
-#define POT_THRESHOLD 2200
-float potFiltered = 0;
 
-uint8_t prevLv15 = 255;
-unsigned long lastBrightSend = 0;
-const unsigned long BRIGHT_SEND_MS = 50;
 
 AsyncUDP udp;
 
@@ -137,14 +130,10 @@ void setup()
  
   ledcAttach (23, freq, resolution);  
   pinMode(25, INPUT_PULLDOWN); //left or right clock
-  //pinMode(32, INPUT_PULLDOWN); //contrast
+  pinMode(32, INPUT_PULLDOWN); //contrast
   pinMode(27, INPUT_PULLDOWN); //buzzer on or off
   pinMode(15, OUTPUT);  //buzzer (switching)output
   pinMode(16, OUTPUT);  //buzzer for runoutof time (switching)output
-
-  analogReadResolution(12);
-  analogSetPinAttenuation(POT_PIN, ADC_11db);
-  potFiltered = analogRead(POT_PIN);
 
   Wire.begin(); // join i2c bus (address optional for master)
   
@@ -206,23 +195,6 @@ byte x = 0;
 void loop()
 {
 
-int potRaw = analogRead(POT_PIN);
-potFiltered = 0.9f * potFiltered + 0.1f * potRaw;
-
-uint8_t lv15 = map((int)potFiltered, 0, POT_MAX, 0, 31);
-
-bool highContrast = (lv15 > 16);
-
-unsigned long now = millis();
-if ((lv15 != prevLv15) && (now - lastBrightSend >= BRIGHT_SEND_MS)) {
-  prevLv15 = lv15;
-  lastBrightSend = now;
-
-  uint8_t brightnessFrame = (lv15 & 0x1F);
-  Wire.beginTransmission(4);
-  Wire.write((char)brightnessFrame);
-  Wire.endTransmission();
-}
     
 leftsec=serialvalue4&B01111111;
 rightsec=serialvalue5&B01111111;;
@@ -301,9 +273,8 @@ if (buzzer){ntraffic=ntraffic|B00000001;}else{ntraffic=ntraffic&B11111110;};
 if (red){ntraffic=ntraffic|B00000010;}else{ntraffic=ntraffic&B11111101;};
 if (yel){ntraffic=ntraffic|B00000100;}else{ntraffic=ntraffic&B11111011;};
 if (grn){ntraffic=ntraffic|B00001000;}else{ntraffic=ntraffic&B11110111;};
-//if (digitalRead(32)){ntraffic=ntraffic|B00010000;}else{ntraffic=ntraffic&B11101111;}; //switch pin 26 indicat high contrast (outdoor) or low contrast (indoor)
-if (highContrast) { ntraffic |= B00010000; }
-else              { ntraffic &= B11101111; }
+if (digitalRead(32)){ntraffic=ntraffic|B00010000;}else{ntraffic=ntraffic&B11101111;}; //switch pin 26 indicat high contrast (outdoor) or low contrast (indoor)
+
 
 nsequence=nsequence&B01000000; //set adresbit 01
 nsequence=nsequence|B01000000; //set adresbit 01
@@ -377,9 +348,7 @@ if ((serialvalue12>>6)&B00000001){nendl=(nendl|15);}; //practise end
 ntimemin=ntimemin|B10000000; //add an 1 as MSB as adress but. So the receiving party recognizes this as minute segment
 if (minsec){ntimemin=ntimemin|B01000000;}else{ntimemin=ntimemin&B10111111;}; //2nd bit to indicate seconds or minute notation.
 if (blinkdim){ntimemin=ntimemin|B00100000;}else{ntimemin=ntimemin&B11011111;}; //3rd bit to dim segments 50% if red light is blinking in red state
-//if (digitalRead(32)){ntimemin=ntimemin|B00010000;}else{ntimemin=ntimemin&B11101111;}; //switch pin 26 indicat high contrast (outdoor) or low contrast (indoor)
-if (highContrast) { ntimemin |= B00010000; }
-else              { ntimemin &= B11101111; }
+if (digitalRead(32)){ntimemin=ntimemin|B00010000;}else{ntimemin=ntimemin&B11101111;}; //switch pin 26 indicat high contrast (outdoor) or low contrast (indoor)
 
 if ((ntraffic!=ptraffic)|((seqloopcount==1)&&(seqrepeatloop>=maxrepeatloop))){
   ptraffic=ntraffic;

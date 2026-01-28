@@ -102,9 +102,6 @@ bool retrievestate;
 bool blinkdim;
 bool minsec;
 
-bool brightnessFromBus = false;
-int busBrightness = 255;
-
 
 
 SoftDMD dmd(5,1);  // DMD controls the entire display
@@ -151,14 +148,7 @@ void loop()
     pbuz=nbuz;
   }; 
 
-  // if (ncontrast){Brightness=indoorcontrast;}else{Brightness=outdoorcontrast;};
-  // dmd.setBrightness(Brightness);
-
-  if (brightnessFromBus) {
-    Brightness = busBrightness;
-  } else {
-    Brightness = ncontrast ? indoorcontrast : outdoorcontrast;
-  }
+  if (ncontrast){Brightness=indoorcontrast;}else{Brightness=outdoorcontrast;};
   dmd.setBrightness(Brightness);
   
 if (nred!=pred){
@@ -419,12 +409,6 @@ void receiveEvent(int howMany)
 {
 
   int x = Wire.read();    // receive byte as an integer
-  if ( ((x >> 5) & 0x07) == 0) {
-    uint8_t lv15 = x & 0x1F;
-    busBrightness = map(lv15, 0, 31, 0, 255);
-    brightnessFromBus = true;
-  }
-  
   delay(1);
   Serial.println(x);         // print the integer
   delay(1);
